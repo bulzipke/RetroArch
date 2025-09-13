@@ -19,6 +19,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "input/input_driver.h"
 #ifdef _WIN32
 #ifdef _XBOX
 #include <xtl.h>
@@ -3332,6 +3333,15 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          *(unsigned *)data = 2;
          break;
 
+      case RETRO_ENVIRONMENT_GET_TARGET_SAMPLE_RATE:
+      {
+         if (!settings)
+            return false;
+
+         *(unsigned *)data = settings->uints.audio_output_sample_rate;
+         break;
+      }
+
       case RETRO_ENVIRONMENT_GET_TARGET_REFRESH_RATE:
       {
          /* Try to use the polled refresh rate first.  */
@@ -5291,7 +5301,7 @@ void core_options_flush(void)
    core_option_manager_t *coreopts = runloop_st->core_options;
    const char *path_core_options   = path_get(RARCH_PATH_CORE_OPTIONS);
    const char *core_options_file   = NULL;
-   bool success                    = false;
+   bool ret                        = false;
 
    msg[0] = '\0';
 
@@ -5319,7 +5329,7 @@ void core_options_flush(void)
       {
          core_option_manager_flush(runloop_st->core_options, conf_tmp);
 
-         success = config_file_write(conf_tmp, path_core_options, true);
+         ret = config_file_write(conf_tmp, path_core_options, true);
          config_file_free(conf_tmp);
       }
    }
@@ -5343,7 +5353,7 @@ void core_options_flush(void)
          if (!path_is_valid(path_core_options))
             runloop_st->core_options->conf->flags |= CONF_FILE_FLG_MODIFIED;
 
-         success = config_file_write(runloop_st->core_options->conf,
+         ret = config_file_write(runloop_st->core_options->conf,
                path_core_options, true);
       }
    }
@@ -5355,7 +5365,7 @@ void core_options_flush(void)
    if (string_is_empty(core_options_file))
       core_options_file = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN);
 
-   if (success)
+   if (ret)
    {
       /* Log result */
       _len = strlcpy(msg, msg_hash_to_str(MSG_CORE_OPTIONS_FLUSHED),
@@ -7009,6 +7019,9 @@ static enum runloop_state_enum runloop_check_state(
    HOTKEY_CHECK(RARCH_PLAY_REPLAY_KEY, CMD_EVENT_PLAY_REPLAY, true, NULL);
    HOTKEY_CHECK(RARCH_RECORD_REPLAY_KEY, CMD_EVENT_RECORD_REPLAY, true, NULL);
    HOTKEY_CHECK(RARCH_HALT_REPLAY_KEY, CMD_EVENT_HALT_REPLAY, true, NULL);
+   HOTKEY_CHECK(RARCH_SAVE_REPLAY_CHECKPOINT_KEY, CMD_EVENT_SAVE_REPLAY_CHECKPOINT, true, NULL);
+   HOTKEY_CHECK(RARCH_PREV_REPLAY_CHECKPOINT_KEY, CMD_EVENT_PREV_REPLAY_CHECKPOINT, true, NULL);
+   HOTKEY_CHECK(RARCH_NEXT_REPLAY_CHECKPOINT_KEY, CMD_EVENT_NEXT_REPLAY_CHECKPOINT, true, NULL);
 
    /* Check Disc Control hotkeys */
    HOTKEY_CHECK3(
@@ -7283,6 +7296,17 @@ int runloop_iterate(void)
 #ifdef HAVE_NETWORKING
          /* FIXME: This is an ugly way to tell Netplay this... */
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
+#endif
+#ifdef HAVE_BSV_MOVIE
+         if (input_st->bsv_movie_state.flags &
+               (BSV_FLAG_MOVIE_FORCE_CHECKPOINT |
+                     BSV_FLAG_MOVIE_PREV_CHECKPOINT |
+                     BSV_FLAG_MOVIE_NEXT_CHECKPOINT |
+                     BSV_FLAG_MOVIE_SEEK_TO_FRAME))
+         {
+            runloop_st->flags &= ~RUNLOOP_FLAG_PAUSED;
+            runloop_st->run_frames_and_pause = 2;
+         }
 #endif
          video_driver_cached_frame();
          goto end;
