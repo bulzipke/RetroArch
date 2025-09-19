@@ -267,6 +267,7 @@ struct bsv_movie
    bool playback;
    bool first_rewind;
    bool did_rewind;
+   bool checkpoint_ready;
 
 #ifdef HAVE_STATESTREAM
    /* Block index and superblock index for incremental checkpoints */
@@ -548,9 +549,10 @@ struct rarch_joypad_driver
    void (*poll)(void);
    bool (*set_rumble)(unsigned, enum retro_rumble_effect, uint16_t);
    bool (*set_rumble_gain)(unsigned, unsigned);
-   bool (*set_sensor_state)(void *data, unsigned port,
+   bool (*set_sensor_state)(unsigned port,
          enum retro_sensor_action action, unsigned rate);
-   float (*get_sensor_input)(void *data, unsigned port, unsigned id);
+   /* return true if handled; false to fall back to input driver */
+   bool (*get_sensor_input)(unsigned port, unsigned id, float *value);
    const char *(*name)(unsigned);
 
    const char *ident;
@@ -1111,6 +1113,7 @@ void bsv_movie_finish_rewind(input_driver_state_t *input_st);
 void bsv_movie_deinit(input_driver_state_t *input_st);
 void bsv_movie_deinit_full(input_driver_state_t *input_st);
 void bsv_movie_enqueue(input_driver_state_t *input_st, bsv_movie_t *state, enum bsv_flags flags);
+void bsv_movie_dequeue_next(input_driver_state_t *input_st);
 
 bool movie_commit_checkpoint(input_driver_state_t *input_st);
 bool movie_skip_to_prev_checkpoint(input_driver_state_t *input_st);
