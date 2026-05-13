@@ -3060,6 +3060,23 @@ bool video_driver_is_hw_context(void)
    return video_st->hw_render.context_type != RETRO_HW_CONTEXT_NONE;
 }
 
+/* Drops cached, core-owned GPU resource references from the active
+ * video driver. Safe to call unconditionally; cheap when no HW context
+ * is active or when the driver does not implement the hook. */
+void video_driver_invalidate_hw_render_cache(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+
+   if (!video_st->current_video || !video_st->data)
+      return;
+   if (video_st->hw_render.context_type == RETRO_HW_CONTEXT_NONE)
+      return;
+   if (!video_st->current_video->invalidate_hw_render_cache)
+      return;
+
+   video_st->current_video->invalidate_hw_render_cache(video_st->data);
+}
+
 bool video_driver_get_viewport_info(struct video_viewport *viewport)
 {
    video_driver_state_t *video_st  = &video_driver_st;
@@ -5534,14 +5551,17 @@ static INLINE void video_driver_scanline_after_frame(video_driver_state_t *video
 
       if (init)
       {
+         if (!scanline_total)
+            scanline_total = video_height;
+
          if (scanline)
             wait = true;
          else if (scanline_total > video_height)
             init = false;
-
-         if (scanline_total < scanline)
-            scanline_total = scanline + 1;
       }
+
+      if (scanline >= scanline_total)
+         scanline_total = scanline + 1;
    }
 
    video_st->scanline[SCANLINE_TOTAL] = scanline_total;
