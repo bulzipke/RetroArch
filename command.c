@@ -809,59 +809,42 @@ bool command_show_osd_msg(command_t *cmd, const char* arg)
 
 bool command_load_state_slot(command_t *cmd, const char *arg)
 {
-   char state_path[PATH_MAX_LENGTH] = "";
    size_t _len                  = 0;
    char reply[128]              = "";
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
    bool savestates_enabled      = core_info_current_supports_savestate();
-   bool ret                     = false;
+   settings_t* settings         = config_get_ptr();
+
    _len  = strlcpy(reply, "LOAD_STATE_SLOT ", sizeof(reply));
    _len += snprintf(reply + _len, sizeof(reply) - _len, "%d", slot);
    if (savestates_enabled)
    {
-      size_t info_size;
-      runloop_get_savestate_path(state_path, sizeof(state_path), slot);
-
-      info_size          = core_serialize_size();
-      savestates_enabled = (info_size > 0);
+      configuration_set_int(settings, settings->ints.state_slot, slot);
+      cmd->state[RARCH_LOAD_STATE_KEY] = true;
    }
-   if (savestates_enabled)
-   {
-      if ((ret = content_load_state(state_path, false, false)))
-         command_post_state_loaded();
-   }
-   else
-      ret = false;
 
    cmd->replier(cmd, reply, _len);
-   return ret;
+   return savestates_enabled;
 }
 
 bool command_save_state_slot(command_t* cmd, const char* arg)
 {
-   char state_path[PATH_MAX_LENGTH] = "";
    size_t _len                  = 0;
    char reply[128]              = "";
    unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
    bool savestates_enabled      = core_info_current_supports_savestate();
-   bool ret = false;
+   settings_t *settings         = config_get_ptr();
+
    _len = strlcpy(reply, "SAVE_STATE_SLOT ", sizeof(reply));
    _len += snprintf(reply + _len, sizeof(reply) - _len, "%d", slot);
    if (savestates_enabled)
    {
-      size_t info_size;
-      runloop_get_savestate_path(state_path, sizeof(state_path), slot);
-
-      info_size          = core_serialize_size();
-      savestates_enabled = (info_size > 0);
+      configuration_set_int(settings, settings->ints.state_slot, slot);
+      cmd->state[RARCH_SAVE_STATE_KEY] = true;
    }
-   if (savestates_enabled)
-      ret = content_save_state(state_path, true);
-   else
-      ret = false;
 
    cmd->replier(cmd, reply, _len);
-   return ret;
+   return savestates_enabled;
 }
 
 bool command_play_replay_slot(command_t *cmd, const char *arg)
