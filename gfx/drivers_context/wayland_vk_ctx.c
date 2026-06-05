@@ -313,11 +313,11 @@ const gfx_ctx_driver_t gfx_ctx_vk_wayland = {
    gfx_ctx_wl_set_swap_interval,
    gfx_ctx_wl_set_video_mode,
    gfx_ctx_wl_get_video_size_common,
-   NULL, /* refresh_rate - handled by display server */
+   gfx_ctx_wl_get_refresh_rate,
    NULL, /* get_video_output_size */
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   NULL, /* metrics - handled by display server */
+   gfx_ctx_wl_get_metrics_common,
    NULL,
    gfx_ctx_wl_update_title_common,
    gfx_ctx_wl_check_window,

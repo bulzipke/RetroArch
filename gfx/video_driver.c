@@ -1289,9 +1289,10 @@ void* video_display_server_init(enum rarch_display_type type)
 #endif
          break;
       case RARCH_DISPLAY_WAYLAND:
-#if defined(HAVE_WAYLAND)
-         current_display_server = &dispserv_wl;
-#endif
+// Disabled due to Wayland+Threaded video issues
+// #if defined(HAVE_WAYLAND)
+//          current_display_server = &dispserv_wl;
+// #endif
          break;
       case RARCH_DISPLAY_KMS:
 #if defined(HAVE_KMS)
